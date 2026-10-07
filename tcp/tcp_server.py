@@ -1,3 +1,4 @@
+import secrets
 import socket
 
 HOST = "127.0.0.1"
@@ -29,7 +30,7 @@ def process_request(message):
         if USERS.get(username) != password:
             return "LOGIN_FAILED"
 
-        session_id = "1001"
+        session_id = secrets.token_hex(8)
         sessions[session_id] = username
 
         return f"LOGIN_SUCCESS|{session_id}"
@@ -97,3 +98,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
