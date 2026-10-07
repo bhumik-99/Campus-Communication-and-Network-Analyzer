@@ -1,44 +1,70 @@
 import socket
 
-print("1. LOGIN")
-print("2. SEND_MESSAGE")
-print("3. LOGOUT")
+HOST = "127.0.0.1"
+PORT = 5001
+TIMEOUT = 5
 
-choice = input("Enter Choice: ")
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(("127.0.0.1", 5001))
+def build_message(choice):
+    if choice == "1":
+        username = input("Enter Username: ").strip()
+        password = input("Enter Password: ").strip()
 
-if choice == "1":
+        if not username or not password:
+            print("Username and password cannot be empty.")
+            return None
 
-    username = input("Enter Username: ")
-    password = input("Enter Password: ")
+        return f"LOGIN|{username}|{password}"
 
-    message = f"LOGIN|{username}|{password}"
+    if choice == "2":
+        session_id = input("Enter Session ID: ").strip()
+        user_message = input("Enter Message: ").strip()
 
-elif choice == "2":
+        if not session_id or not user_message:
+            print("Session ID and message cannot be empty.")
+            return None
 
-    session_id = input("Enter Session ID: ")
-    msg = input("Enter Message: ")
+        return f"SEND_MESSAGE|{session_id}|{user_message}"
 
-    message = f"SEND_MESSAGE|{session_id}|{msg}"
+    if choice == "3":
+        session_id = input("Enter Session ID: ").strip()
 
-elif choice == "3":
+        if not session_id:
+            print("Session ID cannot be empty.")
+            return None
 
-    session_id = input("Enter Session ID: ")
+        return f"LOGOUT|{session_id}"
 
-    message = f"LOGOUT|{session_id}"
+    print("Invalid Choice.")
+    return None
 
-else:
 
-    print("Invalid Choice")
-    client.close()
-    exit()
+def main():
+    print("1. LOGIN")
+    print("2. SEND_MESSAGE")
+    print("3. LOGOUT")
 
-client.send(message.encode())
+    choice = input("Enter Choice: ").strip()
+    message = build_message(choice)
 
-response = client.recv(1024).decode()
+    if message is None:
+        return
 
-print("Server Response:", response)
+    try:
+        with socket.create_connection((HOST, PORT), timeout=TIMEOUT) as client:
+            client.sendall(message.encode("utf-8"))
+            response = client.recv(1024).decode("utf-8")
+            print("Server Response:", response)
 
-client.close()
+    except ConnectionRefusedError:
+        print("Error: TCP server is not running.")
+
+    except TimeoutError:
+        print("Error: Connection timed out.")
+
+    except OSError as error:
+        print(f"Network error: {error}")
+
+
+if __name__ == "__main__":
+    main()

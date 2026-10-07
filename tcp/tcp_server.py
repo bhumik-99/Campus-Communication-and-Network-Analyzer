@@ -1,55 +1,99 @@
 import socket
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+HOST = "127.0.0.1"
+PORT = 5001
 
-server.bind(("127.0.0.1", 5001))
-server.listen(1)
+USERS = {
+    "vinayak": "1234",
+    "admin": "admin",
+    "apoorv": "1234"
+}
 
-print("Server Started...")
+sessions = {}
 
-while True:
+def process_request(message):
+    parts = message.split("|", 2)
 
-    client_socket, client_address = server.accept()
+    if not parts:
+        return "ERROR|Empty request"
 
-    print("\nClient connected:", client_address)
+    command = parts[0]
 
-    message = client_socket.recv(1024).decode()
-
-    print("Received:", message)
-
-    parts = message.split("|")
-
-    if parts[0] == "LOGIN":
+    if command == "LOGIN":
+        if len(parts) != 3:
+            return "ERROR|Invalid LOGIN format"
 
         username = parts[1]
         password = parts[2]
 
-        print("Username:", username)
-        print("Password:", password)
+        if USERS.get(username) != password:
+            return "LOGIN_FAILED"
 
-        client_socket.send("LOGIN_SUCCESS".encode())
+        session_id = "1001"
+        sessions[session_id] = username
 
-    elif parts[0] == "SEND_MESSAGE":
+        return f"LOGIN_SUCCESS|{session_id}"
+
+    elif command == "SEND_MESSAGE":
+        if len(parts) != 3:
+            return "ERROR|Invalid SEND_MESSAGE format"
 
         session_id = parts[1]
         user_message = parts[2]
 
-        print("Session ID:", session_id)
-        print("Message:", user_message)
+        if session_id not in sessions:
+            return "ERROR|Invalid session"
 
-        client_socket.send("MESSAGE_RECEIVED".encode())
+        print(f"{sessions[session_id]} sent: {user_message}")
 
-    elif parts[0] == "LOGOUT":
+        return "MESSAGE_RECEIVED"
+
+    elif command == "LOGOUT":
+        if len(parts) != 2:
+            return "ERROR|Invalid LOGOUT format"
 
         session_id = parts[1]
 
-        print("Session ID:", session_id)
-        print("User Logged Out")
+        if session_id not in sessions:
+            return "ERROR|Invalid session"
 
-        client_socket.send("LOGOUT_SUCCESS".encode())
+        del sessions[session_id]
 
-    else:
+        return "LOGOUT_SUCCESS"
 
-        client_socket.send("INVALID_REQUEST".encode())
+    return "ERROR|Unknown command"
 
-    client_socket.close()
+
+def main():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        server.bind((HOST, PORT))
+        server.listen(5)
+
+        print(f"TCP server started on {HOST}:{PORT}")
+
+        while True:
+            client_socket, client_address = server.accept()
+
+            with client_socket:
+                print("Client connected:", client_address)
+
+                try:
+                    message = client_socket.recv(1024).decode("utf-8")
+
+                    if not message:
+                        continue
+
+                    print("Received:", message)
+
+                    response = process_request(message)
+
+                    client_socket.sendall(response.encode("utf-8"))
+
+                except Exception as error:
+                    print("Client error:", error)
+
+
+if __name__ == "__main__":
+    main()
