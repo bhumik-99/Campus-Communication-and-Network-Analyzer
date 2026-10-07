@@ -1,0 +1,25 @@
+ROUTER: R1-Core
+
+Connected Networks:
+
+192.168.10.0/24 - Academic Zone
+192.168.20.0/24 - Administration Zone
+192.168.30.0/24 - Hostel/User Zone
+192.168.40.0/24 - IoT/Lab Zone
+192.168.50.0/24 - Server Zone
+
+Default Gateways:
+
+Academic: 192.168.10.1
+Administration: 192.168.20.1
+Hostel/User: 192.168.30.1
+IoT/Lab: 192.168.40.1
+Server: 192.168.50.1
+
+Required Tests:
+
+1. Academic PC to Academic gateway
+2. Academic PC to Server
+3. Hostel PC to Server
+4. IoT device to Server
+5. DNS hostname resolution
