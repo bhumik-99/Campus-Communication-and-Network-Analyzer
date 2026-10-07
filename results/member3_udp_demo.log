@@ -1,0 +1,48 @@
+Actual localhost socket demo, 2026-10-07 UTC. OS-selected port; timeout 0.1s.
+SERVER UDP server listening on 127.0.0.1:57504
+CLIENT SEND packet=0 window=[0, 3]
+CLIENT SEND packet=1 window=[0, 3]
+CLIENT SEND packet=2 window=[0, 3]
+CLIENT SEND packet=3 window=[0, 3]
+SERVER ACCEPT packet=0 payload=Telemetry reading 0
+SERVER SEND ACK packet=0
+SERVER ACCEPT packet=1 payload=Telemetry reading 1
+SERVER SEND ACK packet=1
+SERVER SIMULATED DATA LOSS packet=2
+SERVER DISCARD packet=3; expected=2 (duplicate or out of order)
+SERVER SEND ACK packet=1
+CLIENT ACK packet=0 (cumulative)
+CLIENT SEND packet=4 window=[1, 4]
+CLIENT ACK packet=1 (cumulative)
+CLIENT SEND packet=5 window=[2, 5]
+SERVER DISCARD packet=4; expected=2 (duplicate or out of order)
+SERVER SEND ACK packet=1
+SERVER DISCARD packet=5; expected=2 (duplicate or out of order)
+SERVER SEND ACK packet=1
+CLIENT TIMEOUT: retransmit packets 2..5
+CLIENT RESEND packet=2
+CLIENT RESEND packet=3
+CLIENT RESEND packet=4
+CLIENT RESEND packet=5
+SERVER ACCEPT packet=2 payload=Telemetry reading 2
+SERVER SEND ACK packet=2
+SERVER ACCEPT packet=3 payload=Telemetry reading 3
+SERVER SEND ACK packet=3
+SERVER ACCEPT packet=4 payload=Telemetry reading 4
+SERVER SEND ACK packet=4
+SERVER ACCEPT packet=5 payload=Telemetry reading 5
+SERVER SEND ACK packet=5
+CLIENT ACK packet=2 (cumulative)
+CLIENT SEND packet=6 window=[3, 6]
+CLIENT ACK packet=3 (cumulative)
+CLIENT SEND packet=7 window=[4, 7]
+CLIENT ACK packet=4 (cumulative)
+CLIENT ACK packet=5 (cumulative)
+SERVER ACCEPT packet=6 payload=Telemetry reading 6
+SERVER SEND ACK packet=6
+SERVER ACCEPT packet=7 payload=Telemetry reading 7
+SERVER SEND ACK packet=7
+SERVER COMPLETE transfer=b17966a5a73a4dcbaf1e16d7569dfcf4 packets=8
+CLIENT ACK packet=6 (cumulative)
+CLIENT ACK packet=7 (cumulative)
+CLIENT SUCCESS: 8 packets acknowledged; retransmissions=4; elapsed=0.101s

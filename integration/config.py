@@ -1,0 +1,12 @@
+"""Common settings. Localhost allows each member to test on one laptop."""
+
+SERVER_HOST = "127.0.0.1"
+TCP_PORT = 5000
+UDP_PORT = 5001
+BUFFER_SIZE = 4096
+SESSION_TIMEOUT = 300
+WINDOW_SIZE = 4
+UDP_TIMEOUT = 1.0
+UDP_MAX_RETRIES = 10
+UDP_MAX_PACKETS = 1000
+UDP_MAX_TRANSFERS = 128
