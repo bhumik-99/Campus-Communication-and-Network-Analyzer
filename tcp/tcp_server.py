@@ -13,10 +13,10 @@ USERS = {
 sessions = {}
 
 def process_request(message):
-    parts = message.split("|", 2)
-
-    if not parts:
+if not message or not message.strip():
         return "ERROR|Empty request"
+
+    parts = message.split("|", 2)
 
     command = parts[0]
 
