@@ -1,3 +1,4 @@
+
 import unittest
 import socket
 import subprocess
@@ -31,15 +32,19 @@ class TCPIntegrationTests(unittest.TestCase):
     def test_send_message(self):
         response = process_request("LOGIN|vinayak|1234")
         session_id = response.split("|")[1]
+
         response = process_request(
             f"SEND_MESSAGE|{session_id}|Hello campus"
         )
+
         self.assertEqual(response, "MESSAGE_RECEIVED")
 
     def test_logout(self):
         response = process_request("LOGIN|vinayak|1234")
         session_id = response.split("|")[1]
+
         response = process_request(f"LOGOUT|{session_id}")
+
         self.assertEqual(response, "LOGOUT_SUCCESS")
         self.assertNotIn(session_id, sessions)
 
@@ -85,13 +90,21 @@ class TCPSocketIntegrationTests(unittest.TestCase):
                 time.sleep(0.1)
         else:
             cls.server.terminate()
-            cls.server.wait(timeout=3)
-            raise RuntimeError("TCP server did not start on port 5001")
+            try:
+                cls.server.wait(timeout=3)
+            except subprocess.TimeoutExpired:
+                cls.server.kill()
+                cls.server.wait()
+
+            raise RuntimeError(
+                "TCP server did not start on port 5001"
+            )
 
     @classmethod
     def tearDownClass(cls):
         if cls.server.poll() is None:
             cls.server.terminate()
+
             try:
                 cls.server.wait(timeout=3)
             except subprocess.TimeoutExpired:
@@ -108,7 +121,9 @@ class TCPSocketIntegrationTests(unittest.TestCase):
 
     def test_socket_login_success(self):
         response = self.send_request("LOGIN|vinayak|1234")
+
         self.assertTrue(response.startswith("LOGIN_SUCCESS|"))
+
         session_id = response.split("|")[1]
         self.assertTrue(session_id)
 
@@ -123,6 +138,7 @@ class TCPSocketIntegrationTests(unittest.TestCase):
         response = self.send_request(
             f"SEND_MESSAGE|{session_id}|Hello campus"
         )
+
         self.assertEqual(response, "MESSAGE_RECEIVED")
 
     def test_socket_logout(self):
@@ -135,7 +151,20 @@ class TCPSocketIntegrationTests(unittest.TestCase):
         response = self.send_request(
             f"SEND_MESSAGE|{session_id}|Hello again"
         )
+
         self.assertEqual(response, "ERROR|Invalid session")
+
+    def test_connection_refused(self):
+        with socket.socket(
+            socket.AF_INET, socket.SOCK_STREAM
+        ) as temp:
+            temp.bind((HOST, 0))
+            unused_port = temp.getsockname()[1]
+
+        with self.assertRaises(OSError):
+            socket.create_connection(
+                (HOST, unused_port), timeout=1
+            )
 
 
 if __name__ == "__main__":
