@@ -1,3 +1,4 @@
+
 import secrets
 import socket
 
@@ -12,12 +13,12 @@ USERS = {
 
 sessions = {}
 
+
 def process_request(message):
-if not message or not message.strip():
+    if not message or not message.strip():
         return "ERROR|Empty request"
 
     parts = message.split("|", 2)
-
     command = parts[0]
 
     if command == "LOGIN":
@@ -68,7 +69,6 @@ if not message or not message.strip():
 def main():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
         server.bind((HOST, PORT))
         server.listen(5)
 
@@ -89,13 +89,11 @@ def main():
                     print("Received:", message)
 
                     response = process_request(message)
-
                     client_socket.sendall(response.encode("utf-8"))
 
-                except Exception as error:
+                except (OSError, UnicodeDecodeError) as error:
                     print("Client error:", error)
 
 
 if __name__ == "__main__":
     main()
-
