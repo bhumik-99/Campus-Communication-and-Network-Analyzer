@@ -1,14 +1,14 @@
 
-# TCP socket integration tests
-
 import unittest
 import socket
 import subprocess
 import sys
 import time
 import threading
+import io
 from pathlib import Path
 from unittest.mock import patch
+from contextlib import redirect_stdout
 
 from tcp.tcp_server import process_request, sessions
 
@@ -30,8 +30,10 @@ class TCPIntegrationTests(unittest.TestCase):
         self.assertTrue(response.startswith("LOGIN_SUCCESS|"))
 
     def test_login_failure(self):
-        response = process_request("LOGIN|vinayak|wrong")
-        self.assertEqual(response, "LOGIN_FAILED")
+        self.assertEqual(
+            process_request("LOGIN|vinayak|wrong"),
+            "LOGIN_FAILED"
+        )
 
     def test_send_message(self):
         response = process_request("LOGIN|vinayak|1234")
@@ -53,14 +55,40 @@ class TCPIntegrationTests(unittest.TestCase):
         self.assertNotIn(session_id, sessions)
 
     def test_invalid_session(self):
-        response = process_request(
-            "SEND_MESSAGE|invalid|Hello"
+        self.assertEqual(
+            process_request("SEND_MESSAGE|invalid|Hello"),
+            "ERROR|Invalid session"
         )
-        self.assertEqual(response, "ERROR|Invalid session")
 
     def test_invalid_logout(self):
-        response = process_request("LOGOUT|invalid")
-        self.assertEqual(response, "ERROR|Invalid session")
+        self.assertEqual(
+            process_request("LOGOUT|invalid"),
+            "ERROR|Invalid session"
+        )
+
+    def test_empty_request(self):
+        self.assertEqual(
+            process_request(""),
+            "ERROR|Empty request"
+        )
+
+    def test_invalid_login_format(self):
+        self.assertEqual(
+            process_request("LOGIN|vinayak"),
+            "ERROR|Invalid LOGIN format"
+        )
+
+    def test_invalid_message_format(self):
+        self.assertEqual(
+            process_request("SEND_MESSAGE|session"),
+            "ERROR|Invalid SEND_MESSAGE format"
+        )
+
+    def test_invalid_logout_format(self):
+        self.assertEqual(
+            process_request("LOGOUT"),
+            "ERROR|Invalid LOGOUT format"
+        )
 
 
 class TCPSocketIntegrationTests(unittest.TestCase):
@@ -100,7 +128,6 @@ class TCPSocketIntegrationTests(unittest.TestCase):
     def stop_server(cls):
         if cls.server.poll() is None:
             cls.server.terminate()
-
             try:
                 cls.server.wait(timeout=3)
             except subprocess.TimeoutExpired:
@@ -122,60 +149,47 @@ class TCPSocketIntegrationTests(unittest.TestCase):
 
             while True:
                 data = client.recv(1024)
-
                 if not data:
                     break
-
                 response.extend(data)
 
         return response.decode("utf-8")
 
     def test_socket_login_success(self):
-        response = self.send_request(
-            "LOGIN|vinayak|1234"
-        )
-
-        self.assertTrue(
-            response.startswith("LOGIN_SUCCESS|")
-        )
-
-        session_id = response.split("|")[1]
-        self.assertTrue(session_id)
+        response = self.send_request("LOGIN|vinayak|1234")
+        self.assertTrue(response.startswith("LOGIN_SUCCESS|"))
 
     def test_socket_login_failure(self):
-        response = self.send_request(
-            "LOGIN|vinayak|wrong"
+        self.assertEqual(
+            self.send_request("LOGIN|vinayak|wrong"),
+            "LOGIN_FAILED"
         )
-        self.assertEqual(response, "LOGIN_FAILED")
 
     def test_socket_send_message(self):
-        response = self.send_request(
-            "LOGIN|vinayak|1234"
-        )
+        response = self.send_request("LOGIN|vinayak|1234")
         session_id = response.split("|")[1]
 
-        response = self.send_request(
-            f"SEND_MESSAGE|{session_id}|Hello campus"
+        self.assertEqual(
+            self.send_request(
+                f"SEND_MESSAGE|{session_id}|Hello campus"
+            ),
+            "MESSAGE_RECEIVED"
         )
-
-        self.assertEqual(response, "MESSAGE_RECEIVED")
 
     def test_socket_logout(self):
-        response = self.send_request(
-            "LOGIN|vinayak|1234"
-        )
+        response = self.send_request("LOGIN|vinayak|1234")
         session_id = response.split("|")[1]
 
-        response = self.send_request(
-            f"LOGOUT|{session_id}"
-        )
-        self.assertEqual(response, "LOGOUT_SUCCESS")
-
-        response = self.send_request(
-            f"SEND_MESSAGE|{session_id}|Hello again"
-        )
         self.assertEqual(
-            response, "ERROR|Invalid session"
+            self.send_request(f"LOGOUT|{session_id}"),
+            "LOGOUT_SUCCESS"
+        )
+
+        self.assertEqual(
+            self.send_request(
+                f"SEND_MESSAGE|{session_id}|Hello again"
+            ),
+            "ERROR|Invalid session"
         )
 
     def test_connection_refused(self):
@@ -191,11 +205,10 @@ class TCPSocketIntegrationTests(unittest.TestCase):
             )
 
     def test_response_framing(self):
-        response = self.send_request(
-            "LOGIN|vinayak|wrong"
+        self.assertEqual(
+            self.send_request("LOGIN|vinayak|wrong"),
+            "LOGIN_FAILED"
         )
-
-        self.assertEqual(response, "LOGIN_FAILED")
 
     def test_socket_timeout(self):
         with socket.socket(
@@ -215,32 +228,29 @@ class TCPSocketIntegrationTests(unittest.TestCase):
             def slow_server():
                 try:
                     conn, _ = listener.accept()
-
                     with conn:
                         conn.recv(1024)
                         time.sleep(0.5)
                 except OSError:
                     pass
 
-            server_thread = threading.Thread(
+            thread = threading.Thread(
                 target=slow_server,
                 daemon=True
             )
-            server_thread.start()
+            thread.start()
 
             try:
                 with socket.create_connection(
                     (HOST, test_port), timeout=1
                 ) as client:
                     client.settimeout(0.1)
-                    client.sendall(
-                        b"LOGIN|vinayak|1234"
-                    )
+                    client.sendall(b"LOGIN|vinayak|1234")
 
                     with self.assertRaises(socket.timeout):
                         client.recv(1024)
             finally:
-                server_thread.join(timeout=2)
+                thread.join(timeout=2)
 
     def test_actual_tcp_client(self):
         if not CLIENT.exists():
@@ -255,13 +265,8 @@ class TCPSocketIntegrationTests(unittest.TestCase):
             cwd=ROOT
         )
 
-        self.assertEqual(
-            result.returncode, 0,
-            msg=result.stderr
-        )
-        self.assertIn(
-            "LOGIN_SUCCESS|", result.stdout
-        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("LOGIN_SUCCESS|", result.stdout)
 
 
 if __name__ == "__main__":
