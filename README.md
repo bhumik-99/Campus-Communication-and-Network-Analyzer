@@ -646,6 +646,19 @@ Possible future improvements include:
 - Adding stronger protocol framing.
 - Adding more detailed performance reports.
 
+## Project Novelty
+
+The novelty of this project is the integration of multiple Computer Networks concepts into one practical and testable campus communication system. Unlike projects that focus only on Packet Tracer design or individual TCP/UDP programs, this project combines:
+
+- Campus network simulation using Cisco Packet Tracer.
+- TCP client-server communication.
+- UDP reliability using ACKs, timeouts, and retransmissions.
+- Session management with login, validation, timeout, and logout.
+- Data serialization, compression, encryption, and SHA-256 integrity checking.
+- Automated integration testing through GitHub.
+
+The project does not introduce a new networking protocol; its contribution is the practical integration, implementation, and testing of established networking concepts in a single campus communication platform.
+
 ## Conclusion
 
 The Campus Communication and Network Analyzer demonstrates a complete educational communication system by combining network simulation, TCP and UDP socket programming, reliability mechanisms, session management, secure data processing, and automated testing.
